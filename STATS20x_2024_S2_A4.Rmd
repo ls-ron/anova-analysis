@@ -1,0 +1,247 @@
+---
+title: "STATS 201/8 Assignment 4"
+author: Ronald Voivod 351763490 rvoi918
+date: 'Due Date: 3pm Thursday 26th September'
+output:
+  html_document:
+    fig_caption: yes
+    number_sections: yes
+  pdf_document: 
+    number_sections: yes
+  word_document: 
+    number_sections: yes
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.height=3)
+```
+```{r setup, echo=FALSE}
+## Do not delete this! It loads the s20x library for you. 
+## NOTE: for this assignment you need to update the s20x library to the latest
+## version. Run install.packages("s20x") before starting this assignment
+## (you only need to do this once).
+library(s20x)
+## From now on we also need the emmeans library:
+library(emmeans)
+```
+
+
+# Question 1 [16 Marks]
+
+An agricultural researcher was investigating different methods of improving potato crop yields. A large field was available for an experiment. It was split up into 10 by 10 metre blocks, with two metre pathways separating them. The blocks were randomly allocated to one of three treatment groups, Treatment 1, Treatment 2 or Control. The two treatment groups had one of two different mixtures of soil enhancers added to the soil before planting. Otherwise, the three groups were just grown using standard growing practices. After the plants had fully grown, the plants were all harvested and the yield for each plot was recorded.
+
+The dataset is stored in Potato.csv and includes variables:
+
+Variable   | Description
+-----------|-------------------------------------------------------
+Yield      | the yield of the block of potato plants (in kg),
+Group      | the treatment applied to the block of potato plants, coded as: (Control, T1 for Treatment 1, and T2 for Treatment 2)
+
+We want to know if there is evidence that treating the potatoes by adding soil enhancers increased yield and if one of the treatments was more effective than the other. Quantify any differences.
+
+
+**Instructions:**
+
+*	Make sure you change your name and UPI/ID number at the top of the assignment.
+*	Comment on the plot/summary statistics of the data.
+* Fit an appropriate model to the data. Check the model assumptions.
+* Write appropriate **Methods and Assumption Checks**.
+*	Write an appropriate **Executive Summary**. 
+
+## Question of interest/goal of the study:
+
+We want to know if there is evidence that treating the potatoes by adding soil enhancers increased yield and if one of the treatments was more effective than the other.
+
+
+## Read in and inspect the data:
+
+```{r,fig.height=5,fig.width=8}
+Potato.df <- read.csv("Potato.csv", stringsAsFactors=TRUE)
+boxplot(Yield ~ Group,horizontal=TRUE, Potato.df)
+summaryStats(Yield ~ Group, Potato.df)
+```
+
+## Comment on the plots and summary statistics:
+
+The control group seems to have experienced the lowest yield, with an average value of 539kg. The T2 group seems to have experienced an increased yield from the control, with an average value of 569kg. The T1 group seems to have the highest yield, higher than the T2 group, with an average value of 580kg. Variability between groups looks relatively similar, except for the outlier in group T2.
+
+
+
+## Fit an appropriate model and check assumptions:
+
+```{r, fig.height=5,fig.width=6}
+crop.fit <- lm(Yield ~ Group, data=Potato.df)
+
+modelcheck(crop.fit)
+
+anova(crop.fit)
+
+summary(crop.fit)
+
+crop.emm = emmeans(crop.fit, specs = pairwise~Group, infer=T)
+crop.emm$contrasts
+
+```
+
+
+## Methods and assumption checks:
+
+Independence is achieved because each field which contained the experiments had two metre pathways separating them. EOV is achieved through our Residuals vs Fitted model check where there is constant scatter around 0, there is a relatively normal distribution of residuals, and there are no excessively influential points in the cooks plot model check. We are therefore able to rely on the results from fitting this linear model
+
+Our model is: 
+$Yield_i = \beta_0 + \beta_1 \times T1_i + \beta_2 \times T2_i + \epsilon_i$
+where $T1_i$ equals 1 if the field chosen is in the T1 group and 0 otherwise, additionally, $T2_i$ equals 1 if the field chosen is in the T2 group and 0 otherwise, and $\epsilon_i \sim iid ~ N(0, \sigma^2)$. (Note: $\beta_0$ is the crop yield for the control group).
+
+Our model explains about 39% of the variation in the yield.
+
+
+
+## Executive summary:
+
+An agricultural researcher wanted to see whether there was an increase in crop yield when two different a soil enhancers groups (T1 and T2) were used on separate fields, compared to a no added soil enhancers group (control).
+
+There is strong evidence of either of the soil enhancer groups having an effect on the crop yield when compared to the no added soil enhancers group (p-value = 6.196e-10).
+
+However, there was no evidence in a difference between the T1 or T2 groups increasing crop yield more than the other (p-value = 0.1819). Hence there is no evidence that one of the soil enhancers was more effective than the other.
+
+We estimate that on average, crop yield in the T1 group increased by between 27.2kg to 54.6kg compared to the control group. Additionally, we estimate on average, crop yield in the T2 group increased by between 16.9kg to 44.4kg compared to the control group. 
+
+
+
+
+****
+
+# Question 2 [20 Marks]
+
+A software company is developing a new computer game. The manager wants to see what effect the speed setting of the game has on the length of time players survive in the game and how this differs depending on players experience level. A large group of play testers is available, most of whom already have some experience playing the new game, and each is allocated to play a version of the game with varying speed settings. 
+
+We wish to determine (1) how the speed settings affect players survival times, (2) how survival times differ between players with more and less experience and (3) whether the effects of changing speed settings is different for players with more and less experience. We also wish to quantify any significant effects.
+
+The data is stored is Game.csv and contains the following variables:
+
+Variable   | Description
+-----------|--------------------------------------------------------------------------
+Time    | The survival time for the player (in minutes),
+Speed        | The speed setting at which the software was running, coded as: (Low, Med or Rapid - with Med standing for medium speed),
+Experience  | The experience level the player, coded as:(Less or More).
+
+
+
+**Instructions:**
+
+*	Comment on the interaction plots of the data..
+*	Fit an appropriate linear model to the data.
+  If necessary, change the model until you are satisfied that you have found the simplest adequate model. 
+  Check the model assumptions.
+  Generate the inference output you need from the final model.
+* Briefly discuss why using a log transformation of TotalKg is better in this analysis?
+* Fit an appropriate model to the data. Check the model assumptions.
+* Write appropriate **Methods and Assumption Checks**.
+*	Write an appropriate **Executive Summary**. 
+  Ensure you address the questions of interest.
+
+
+## Question of interest/goal of the study:
+
+The questions we want answered are: how the speed settings affect players survival times,  how survival times differ between players with more and less experience and  whether the effects of changing speed settings is different for players with more and less experience?
+
+## Read in and inspect the data:
+```{r,fig.height=5,fig.width=8}
+Game.df <- read.csv("Game.csv")
+interactionPlots(Time ~ Speed + Experience, data = Game.df)
+interactionPlots(log(Time) ~ Speed + Experience, data = Game.df)
+```
+
+## Comment on the plots:
+
+In the interaction plot, the lines seem to potentially not be parallel, however more testing is required. As the speed setting decreases to Med and Low, regardless of experience level of the play testers, there seems to be increasing scatter/variability in survival times. The more experienced play testers seemed to survive for longer on average.
+
+The log interaction plot appears to have lines that are parallel. As the speed of the game decreases, time survived tends to increase. Additionally, the more experienced play testers tended to survive for longer than less experienced play testers.
+
+As speed decreased, regardless of experience level, playtesters' survival time increased in scatter/variability. A log transformation may better describe the data.
+
+
+## Fit model, simplify as necessary, and generate inference output:
+```{r,fig.height=5,fig.width=6}
+game.fit = lm(log(Time) ~ Speed * Experience, data=Game.df)
+modelcheck(game.fit)
+anova(game.fit)
+
+game.fit1 = lm(Time ~ Speed + Experience, data=Game.df)
+modelcheck(game.fit1)
+
+# game.fit2 seems to be the best model
+game.fit2 = lm(log(Time) ~ Speed + Experience, data=Game.df)
+modelcheck(game.fit2)
+anova(game.fit2)
+summary(game.fit2)
+# back-transforming code and pairwise inference
+experience_output = print(pairs(emmeans(game.fit2, ~Experience), infer=T))
+speed_output = print(pairs(emmeans(game.fit2, ~Speed), infer=T)
+)
+experience_pairs = cbind(experience_output[[5]], experience_output[[6]])
+speed_pairs = cbind(speed_output[[5]], speed_output[[6]])
+dimnames(experience_pairs)[[1]]=experience_output[[1]]
+dimnames(speed_pairs)[[1]]=speed_output[[1]]
+experience_pairs
+exp(experience_pairs)
+100*(exp(experience_pairs)-1)
+speed_pairs
+exp(speed_pairs)
+100*(exp(speed_pairs)-1)
+
+
+
+```
+
+## Why is using a log transformation of Time better in this analysis?
+
+The residuals vs fitted plot suggested residual variance increased with the mean and the Q-Q residuals plot showed a slight right skew. The log-transformed model showed constant scatter in the residuals vs fitted plot, and a more normal distribution. 
+
+
+
+## Methods and assumption checks:
+
+There is no mention of independence, therefore for this analysis we will be working under the assumption that there is independence through a random sampling of play testers. Our EOV is achieved in our residuals vs fitted plot through a log transformation, where we see constant scatter around 0 across all levels. Our data also shows a relatively normal distribution of residuals.
+
+Since we had two explanatory factors, we fitted a two-way ANOVA interaction model. The explanatory variables were speed of the game and experience level of the play tester. This model showed there was strong evidence of no interaction between speed of the game and experience level when compared to time survived. Due to the residual plot suggesting residual variance increased with the mean, a log transformation for the response variable was required.
+
+Our model is: 
+$log(Time_i) = \mu+\alpha_i+\beta_j+\epsilon_{ijk}, \epsilon_{ijk} \sim N(0, \sigma^2)$,
+
+where $\mu$ us the overall mean log total amount of time survived by the play tester, $\alpha$ is the effect due to the $i^{th}$ play tester's experience level, $i \in \{More, Less\}$, $\beta_j$ is the effect due to the $j^{th}$ Speed type, $j \in \{Rapid, Med, Low\}$.
+
+Our model explains about 65% of variation in log(Time)
+
+## Executive summary:
+
+A software company wanted to see how speed settings affected survival time and whether experience level of a play tester affected time survived in their new computer game. Additionally, the software company wanted to see whether the effects of changing speed settings is different for players with more or less experience.`
+
+We found evidence to suggested time survived was different for more/less experience play testers (p-value was approximately 0).
+
+We found evidence to suggest that slower speed settings resulted in a higher survival time (p-value was approximately 0).
+
+We found no evidence to suggest that changing speed settings is different for players with more or less experience (p-value = 0.5308).
+
+We estimate that the median time survived (in minutes) on the Low speed setting is increased by:
+
+* between 46.7% and 87.5% compared to Med speed setting
+
+* between 131.6% and 196.2% compared to the Rapid speed setting
+
+Additionally, we estimate that the median time survived (in minutes) on the Med speed setting is increased by between 39.7% and 78.6% compared to the Rapid speed setting.
+
+We estimate that the median time survived (in minutes) for Less experienced play testers decreased by between 24.7% and 36.4% when compared to More experienced play testers.
+
+
+
+
+
+
+
+
+
+
+
+
+
